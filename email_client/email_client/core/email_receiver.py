@@ -452,8 +452,8 @@ class EmailReceiver:
                         # 解码显示名称（处理中文等）
                         display_name = imap_utf7_decode(raw_name)
                         folders.append(display_name)
-                        # 保存映射（带引号以处理空格）
-                        self.folder_map[display_name] = f'"{raw_name}"'
+                        # 保存映射（保持原始名称，交给 imaplib 处理引号）
+                        self.folder_map[display_name] = raw_name
 
         except Exception as e:
             print(f"获取文件夹列表失败: {e}")
@@ -461,7 +461,7 @@ class EmailReceiver:
         # 如果没有获取到任何文件夹，至少返回收件箱
         if not folders:
             folders = ["INBOX"]
-            self.folder_map["INBOX"] = '"INBOX"'
+            self.folder_map["INBOX"] = "INBOX"
 
         return folders
 
@@ -493,10 +493,10 @@ class EmailReceiver:
         try:
             # 将中文名称编码为 IMAP UTF-7
             raw_name = imap_utf7_encode(folder_name)
-            # 创建文件夹（名称需要用引号包裹）
-            self.connection.create(f'"{raw_name}"')
+            # 创建文件夹（imaplib 会自动处理引号）
+            self.connection.create(raw_name)
             # 更新映射
-            self.folder_map[folder_name] = f'"{raw_name}"'
+            self.folder_map[folder_name] = raw_name
             return True, f"文件夹 '{folder_name}' 创建成功"
         except Exception as e:
             return False, f"创建失败: {str(e)}"
@@ -557,11 +557,11 @@ class EmailReceiver:
             raw_old = self.get_raw_folder_name(old_name)
             raw_new = imap_utf7_encode(new_name)
             # 执行重命名
-            self.connection.rename(raw_old, f'"{raw_new}"')
+            self.connection.rename(raw_old, raw_new)
             # 更新映射
             if old_name in self.folder_map:
                 del self.folder_map[old_name]
-            self.folder_map[new_name] = f'"{raw_new}"'
+            self.folder_map[new_name] = raw_new
             return True, f"文件夹已重命名为 '{new_name}'"
         except Exception as e:
             return False, f"重命名失败: {str(e)}"
