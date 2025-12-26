@@ -475,7 +475,14 @@ class EmailReceiver:
         【返回值】
         原始名称（如 '"Sent Messages"'）
         """
-        return self.folder_map.get(display_name, display_name)
+        raw = self.folder_map.get(display_name)
+
+        # 如果映射不存在，说明可能还没调用过 get_folders，
+        # 直接对显示名称进行 IMAP UTF-7 编码，确保非 ASCII 名称也能被服务器识别。
+        if raw is None:
+            raw = imap_utf7_encode(display_name)
+
+        return raw
 
     def create_folder(self, folder_name: str) -> Tuple[bool, str]:
         """
